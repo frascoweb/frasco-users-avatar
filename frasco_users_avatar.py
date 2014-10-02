@@ -14,9 +14,9 @@ class UsersAvatarFeature(Feature):
                 "gravatar_size": 80}
 
     def init_app(self, app):
-        self.user_model = app.features.models.ensure_model(app.features.users.model,
+        user_model = app.features.models.ensure_model(app.features.users.model,
             **dict([(self.options["avatar_column"], str)]))
-        self.user_model.avatar_url = property(self.get_avatar_url)
+        user_model.avatar_url = property(self.get_avatar_url)
 
     def get_avatar_url(self, user):
         filename = getattr(user, self.options["avatar_column"], None)

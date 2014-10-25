@@ -11,7 +11,8 @@ class UsersAvatarFeature(Feature):
                 "default_url": None,
                 "use_gravatar": True,
                 "gravatar_email_column": None,
-                "gravatar_size": 80}
+                "gravatar_size": 80,
+                "gravatar_scheme": "//"}
 
     def init_app(self, app):
         user_model = app.features.models.ensure_model(app.features.users.model,
@@ -34,7 +35,7 @@ class UsersAvatarFeature(Feature):
     def get_gravatar_url(self, email, size=None, default=None):
         h = hashlib.md5(email.lower()).hexdigest()
         size = size or self.options["gravatar_size"]
-        url = "http://www.gravatar.com/avatar/%s?s=%s" % (h, size)
+        url = "%swww.gravatar.com/avatar/%s?s=%s" % (self.options["gravatar_scheme"], h, size)
         default = default or self.options["default_url"]
         if default:
             url += "&d=%s" % urllib.quote(default)

@@ -1,12 +1,16 @@
 from frasco import Feature, action, current_app
-from frasco_forms import url_for_upload
 import hashlib
 import urllib
+
+try:
+    from frasco_upload import url_for_upload
+except ImportError:
+    pass
 
 
 class UsersAvatarFeature(Feature):
     name = "users_avatar"
-    requires = ["users", "forms"]
+    requires = ["users"]
     defaults = {"avatar_column": "avatar_filename",
                 "default_url": None,
                 "use_gravatar": True,

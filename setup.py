@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='frasco-users-avatar',
-    version='0.1',
+    version='0.2',
     url='http://github.com/frascoweb/frasco-users-avatar',
     license='MIT',
     author='Maxime Bouroumeau-Fuseau',

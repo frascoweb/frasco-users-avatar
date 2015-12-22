@@ -42,7 +42,8 @@ class UsersAvatarFeature(Feature):
         if not hasattr(user_model, 'avatar_url'):
             user_model.avatar_url = property(self.get_avatar_url)
 
-        @app.route('/static/flavatars/<name>')
+        @app.route('/static/flavatars/<name>.svg')
+        @app.route('/static/flavatars/<name>/<bgcolorstr>.svg')
         def flavatar_static(name):
             return self.generate_first_letter_avatar_svg(
                 name, request.args.get('bgcolorstr'), request.args.get('size')), 200, {'Content-Type': 'image/svg+xml'}
@@ -73,7 +74,7 @@ class UsersAvatarFeature(Feature):
             else:
                 default = self.options['gravatar_default']
         if default:
-            url += "&d=%s" % urllib.quote(default)
+            url += "&d=%s" % urllib.quote_plus(default)
         return url
 
     def generate_first_letter_avatar_svg(self, name, bgcolorstr=None, size=None):

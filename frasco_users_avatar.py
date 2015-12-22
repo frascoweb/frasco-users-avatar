@@ -62,8 +62,8 @@ class UsersAvatarFeature(Feature):
                 return flavatar(name, hash)
 
         if self.options['add_flavatar_route']:
-            app.add_url_rule('/flavatar/<name>.svg', 'index', index)
-            app.add_url_rule('/flavatar/<name>/<bgcolorstr>.svg', 'index', index)
+            app.add_url_rule('/flavatar/<name>.svg', 'flavatar', flavatar)
+            app.add_url_rule('/flavatar/<name>/<bgcolorstr>.svg', 'flavatar', flavatar)
 
     def get_avatar_url(self, user):
         filename = getattr(user, self.options["avatar_column"], None)

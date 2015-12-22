@@ -44,9 +44,11 @@ class UsersAvatarFeature(Feature):
 
         @app.route('/static/flavatars/<name>.svg')
         @app.route('/static/flavatars/<name>/<bgcolorstr>.svg')
-        def flavatar_static(name):
+        def flavatar_static(name, bgcolorstr=None):
+            if bgcolorstr is None:
+                bgcolorstr = request.args.get('bgcolorstr')
             return self.generate_first_letter_avatar_svg(
-                name, request.args.get('bgcolorstr'), request.args.get('size')), 200, {'Content-Type': 'image/svg+xml'}
+                name, bgcolorstr, request.args.get('size')), 200, {'Content-Type': 'image/svg+xml'}
 
     def get_avatar_url(self, user):
         filename = getattr(user, self.options["avatar_column"], None)

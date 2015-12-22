@@ -4,6 +4,7 @@ import urllib
 import math
 import random
 import base64
+import requests
 
 try:
     from frasco_upload import url_for_upload
@@ -19,19 +20,21 @@ class UsersAvatarFeature(Feature):
     name = "users_avatar"
     requires = ["users"]
     defaults = {"avatar_column": "avatar_filename",
-                "default_url": None,
+                "url": None,
                 "avatar_size": 80,
-                "use_gravatar": True,
+                "url_scheme": "",
+                "add_flavatar_route": False,
+                "add_avatar_route": True,
+                "try_gravatar": True,
+                "force_gravatar": False,
                 "gravatar_size": None,
                 "gravatar_email_column": None,
-                "gravatar_scheme": "//",
                 "gravatar_default": "mm",
-                "gravatar_default_flavatar": False,
-                "use_flavatar": False,
+                "force_flavatar": False,
                 "flavatar_size": "100%",
                 "flavatar_name_column": None,
                 "flavatar_font_size": 80,
-                "flavatar_text_dy": "0.25em",
+                "flavatar_text_dy": "0.32em",
                 "flavatar_length": 1,
                 "flavatar_text_color": "#ffffff",
                 "flavatar_bg_colors": ["#5A8770", "#B2B7BB", "#6FA9AB", "#F5AF29", "#0088B9", "#F18636", "#D93A37", "#A6B12E", "#5C9BBC", "#F5888D", "#9A89B5", "#407887", "#9A89B5", "#5A8770", "#D33F33", "#A2B01F", "#F0B126", "#0087BF", "#F18636", "#0087BF", "#B2B7BB", "#72ACAE", "#9C8AB4", "#5A8770", "#EEB424", "#407887"]}
@@ -42,13 +45,25 @@ class UsersAvatarFeature(Feature):
         if not hasattr(user_model, 'avatar_url'):
             user_model.avatar_url = property(self.get_avatar_url)
 
-        @app.route('/static/flavatars/<name>.svg')
-        @app.route('/static/flavatars/<name>/<bgcolorstr>.svg')
-        def flavatar_static(name, bgcolorstr=None):
+        def flavatar(name, bgcolorstr=None):
             if bgcolorstr is None:
                 bgcolorstr = request.args.get('bgcolorstr')
             return self.generate_first_letter_avatar_svg(
                 name, bgcolorstr, request.args.get('size')), 200, {'Content-Type': 'image/svg+xml'}
+
+        if self.options['add_avatar_route']:
+            @app.route('/avatar/<hash>/<name>')
+            def avatar(hash, name):
+                if self.options['try_gravatar']:
+                    size = self.options['gravatar_size'] or self.options["avatar_size"]
+                    r = requests.get(self._format_gravatar_url(hash, s=size, d=404, _scheme='http'))
+                    if r.status_code != 404:
+                        return r.content, 200, {'Content-Type': r.headers['content-type']}
+                return flavatar(name, hash)
+
+        if self.options['add_flavatar_route']:
+            app.add_url_rule('/flavatar/<name>.svg', 'index', index)
+            app.add_url_rule('/flavatar/<name>/<bgcolorstr>.svg', 'index', index)
 
     def get_avatar_url(self, user):
         filename = getattr(user, self.options["avatar_column"], None)
@@ -56,28 +71,32 @@ class UsersAvatarFeature(Feature):
             return url_for_upload(filename)
         email = getattr(user, self.options["gravatar_email_column"] or
             current_app.features.users.options["email_column"], None)
+        hash = hashlib.md5(email.lower()).hexdigest()
         username = getattr(user, self.options["flavatar_name_column"] or
             current_app.features.users.options["username_column"], None)
-        if self.options["use_flavatar"] and (email or username):
+        if self.options["force_flavatar"] and (email or username):
+            if self.options['add_flavatar_route']:
+                return url_for('flavatar', name=username, bgcolorstr=hash, _external=True,
+                    _scheme=self.options['url_scheme'])
             return svg_to_base64_data(self.generate_first_letter_avatar_svg(username or email, username))
-        elif self.options["use_gravatar"] and email:
-            return self.get_gravatar_url(email, username)
-        return self.options["default_url"]
+        if self.options["force_gravatar"] and email:
+            return self.get_gravatar_url(email)
+        if self.options['url']:
+            return self.options["url"].format(email=email, email_hash=hash, username=username)
+        if self.options['add_avatar_route']:
+            return url_for('avatar', hash=hash, name=username, _external=True,
+                    _scheme=self.options['url_scheme'])
 
     @action("gravatar_url", default_option="email", as_="gravatar_url")
-    def get_gravatar_url(self, email, name=None, size=None, default=None):
-        h = hashlib.md5(email.lower()).hexdigest()
+    def get_gravatar_url(self, email, size=None, default=None):
+        hash = hashlib.md5(email.lower()).hexdigest()
         size = size or self.options['gravatar_size'] or self.options["avatar_size"]
-        url = "%swww.gravatar.com/avatar/%s?s=%s" % (self.options["gravatar_scheme"], h, size)
-        default = default or self.options["default_url"]
-        if not default:
-            if self.options['gravatar_default_flavatar']:
-                default = url_for('flavatar_static', name=name or email, bgcolorstr=email, _external=True)
-            else:
-                default = self.options['gravatar_default']
-        if default:
-            url += "&d=%s" % urllib.quote_plus(default)
-        return url
+        default = default or self.options['gravatar_default']
+        return self._format_gravatar_url(hash, s=size, d=default)
+
+    def _format_gravatar_url(self, hash, _scheme=None, **kwargs):
+        return ("%s://www.gravatar.com/avatar/%s?%s" % (self.options["url_scheme"] or _scheme, hash,
+            urllib.urlencode({k: v for k, v in kwargs.items() if v is not None}))).lstrip(':')
 
     def generate_first_letter_avatar_svg(self, name, bgcolorstr=None, size=None):
         size = size or self.options['flavatar_size'] or self.options["avatar_size"]

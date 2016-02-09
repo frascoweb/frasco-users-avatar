@@ -56,9 +56,12 @@ class UsersAvatarFeature(Feature):
             def avatar(hash, name):
                 if self.options['try_gravatar']:
                     size = self.options['gravatar_size'] or self.options["avatar_size"]
-                    r = requests.get(self._format_gravatar_url(hash, s=size, d=404, _scheme='http'))
-                    if r.status_code != 404:
-                        return r.content, 200, {'Content-Type': r.headers['content-type']}
+                    try:
+                        r = requests.get(self._format_gravatar_url(hash, s=size, d=404, _scheme='http'))
+                        if r.status_code != 404:
+                            return r.content, 200, {'Content-Type': r.headers['content-type']}
+                    except Exception:
+                        pass
                 return flavatar(name, hash)
 
         if self.options['add_flavatar_route']:

@@ -77,7 +77,11 @@ class UsersAvatarFeature(Feature):
         username = getattr(user, self.options["flavatar_name_column"] or
             current_app.features.users.options["username_column"], None)
         if username:
-            hash = hashlib.md5(username.lower()).hexdigest()
+            if isinstance(username, unicode):
+                username = username.lower().encode('utf-8')
+            else:
+                username = username.lower()
+            hash = hashlib.md5(username).hexdigest()
         email = getattr(user, self.options["gravatar_email_column"] or
             current_app.features.users.options["email_column"], None)
         if email:
@@ -87,7 +91,7 @@ class UsersAvatarFeature(Feature):
             if self.options['add_flavatar_route']:
                 return url_for('flavatar', name=username, bgcolorstr=hash, _external=True,
                     _scheme=self.options['url_scheme'])
-            return svg_to_base64_data(self.generate_first_letter_avatar_svg(username or email, username))
+            return svg_to_base64_data(self.generate_first_letter_avatar_svg(username or email, hash))
         if self.options["force_gravatar"] and email:
             return self.get_gravatar_url(email)
         if self.options['url'] and email:

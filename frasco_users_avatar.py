@@ -72,11 +72,17 @@ class UsersAvatarFeature(Feature):
         filename = getattr(user, self.options["avatar_column"], None)
         if filename:
             return url_for_upload(filename)
-        email = getattr(user, self.options["gravatar_email_column"] or
-            current_app.features.users.options["email_column"], None)
-        hash = hashlib.md5(email.lower()).hexdigest()
+
+        hash = None
         username = getattr(user, self.options["flavatar_name_column"] or
             current_app.features.users.options["username_column"], None)
+        if username:
+            hash = hashlib.md5(username.lower()).hexdigest()
+        email = getattr(user, self.options["gravatar_email_column"] or
+            current_app.features.users.options["email_column"], None)
+        if email:
+            hash = hashlib.md5(email.lower()).hexdigest()
+
         if self.options["force_flavatar"] and (email or username):
             if self.options['add_flavatar_route']:
                 return url_for('flavatar', name=username, bgcolorstr=hash, _external=True,
@@ -84,7 +90,7 @@ class UsersAvatarFeature(Feature):
             return svg_to_base64_data(self.generate_first_letter_avatar_svg(username or email, username))
         if self.options["force_gravatar"] and email:
             return self.get_gravatar_url(email)
-        if self.options['url']:
+        if self.options['url'] and email:
             return self.options["url"].format(email=email, email_hash=hash, username=username)
         if self.options['add_avatar_route']:
             return url_for('avatar', hash=hash, name=username, _external=True,

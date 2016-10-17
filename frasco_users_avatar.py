@@ -97,7 +97,7 @@ class UsersAvatarFeature(Feature):
         if self.options['url'] and email:
             return self.options["url"].format(email=email, email_hash=hash, username=username)
         if self.options['add_avatar_route']:
-            return url_for('avatar', hash=hash, name=username, _external=True,
+            return url_for('avatar', hash=hash, name=(username or email), _external=True,
                     _scheme=self.options['url_scheme'])
 
     @action("gravatar_url", default_option="email", as_="gravatar_url")
